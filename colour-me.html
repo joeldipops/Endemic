@@ -1,0 +1,18 @@
+<endemic-definition data-name="colour-me">
+    <label data-name="box">${data-text}</label>
+    <input type="text" data-name="input" name="${inputName}" />
+    <style>
+* {
+    color: ${colour};
+}
+    </style>
+    <script>
+Endemic.register(class extends HTMLElement {
+    constructor() {
+        super();
+        this.inputName = "myColour";
+        this.colour = "#FF0000";
+    }
+});
+    </script>
+</endemic-definition>
