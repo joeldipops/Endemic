@@ -1,1 +1,1 @@
-Copyright (C) J Roberts 2022. All Rights Reserved.
+Copyright (c) J Roberts 2022. All Rights Reserved.
