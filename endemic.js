@@ -45,10 +45,11 @@ const _pushToken = function(token, node, tokenString) {
  */
 const _discoverTokens = function(node) {
     // Look-behinds not universally supported yet, so just rip out escaped braces before looking for tokens.
-    let content = node.textContent.replace(/\\[{}]/, "");
+    let initialValue = (node.innerHTML || node.textContent);
+    let content = initialValue.replace(/\\[{}]/, "");
     let nodeTokens = content.match(_moustacheRegex) || [];
     for(let j = 0; j < nodeTokens.length; j++) {
-        _pushToken.call(this, { initialValue: node.textContent }, node, nodeTokens[j]);
+        _pushToken.call(this, { initialValue: initialValue }, node, nodeTokens[j]);
     }
 
     let observedAttr = [];
@@ -140,6 +141,9 @@ const endemic = {
 
         let container = component.cloneNode(true);
         let name = component.getAttribute("data-name");
+        if (_registered[name]) {
+            return;
+        }
 
         _registered[name] = class extends type {
             /**
@@ -147,12 +151,13 @@ const endemic = {
              */
             constructor() {
                 super();
-
                 for(let i = 0; i < this.attributes.length; i++) {
                     this[this.attributes[i].name] = this.attributes[i].value;
                 }
 
-                this.attachShadow({ mode : "open" });
+                if (!this.shadowRoot) {
+                    this.attachShadow({ mode : "open" });
+                }
 
                 this.tokens = [];
                 this.tokenIndex = {};
@@ -163,50 +168,103 @@ const endemic = {
                         && !(container.childNodes[i] instanceof HTMLScriptElement)
                     ) {
                         let node = container.childNodes[i].cloneNode(true);
-
-                        _discoverTokens.call(this, node);
-
                         this.shadowRoot.appendChild(node);
                     }
                 }
 
-                this.render();
+                if (this.init instanceof Function) {
+                    this.init();
+                }
+
+                for (let i = 0; i < this.shadowRoot.childNodes.length; i++) {
+                    _discoverTokens.call(this, this.shadowRoot.childNodes[i]);
+                }
+
+                this.populate();
 
                 this.mutationObserver = new MutationObserver(_onAttributeChange.bind(this));
                 this.mutationObserver.observe(this, { attributes: true });
             }
 
+
+            /**
+             * 
+             * @param {*} fragment 
+             * @param {*} extraValues 
+             */
+            applyTokensToFragment(fragment, extraValues) {
+                let tokenContainer = { tokens: [], tokenIndex: {} };
+                for (let i = 0; i < fragment.childNodes.length; i++) {
+                    _discoverTokens.call(tokenContainer, fragment.childNodes[i]);
+                }
+
+                this.populate.call(tokenContainer, extraValues);
+            }            
+
             /**
              * 
              */
-            render() {
-                let lastNode = null;
-                for(let i = 0; i < this.tokens.length; i++) {
-                    // Tokens for the same node should be ordered together, so we can apply each token based off the initialValue of that node                    
+            discoverTokens() {
+                var newTokens = [];
+                // Remove tokens that are no longer relevant
+                for(let i = 0; i < this.tokens; i++) {
+                    if (this.tokens[i].node.parentElement) {
+                        newTokens.push(this.tokens[i]);
+                    }
+                }
 
-                    let content = null;
+                this.tokens = newTokens;
+
+                for (let i = 0; i < this.shadowRoot.childNodes.length; i++) {
+                    _discoverTokens.call(this, this.shadowRoot.childNodes[i]);
+                }                
+
+                // TODO: Dedupe
+            }
+
+            /**
+             * 
+             */
+            populate(extraValues) {
+                var content;
+
+                // Reset everything back to initial value before we start applying tokens.
+                for(let i = 0; i < this.tokens.length; i++) {
+                    if (this.tokens[i].attributeName) {
+                        this.tokens[i].node.setAttribute(this.tokens[i].attributeName, this.tokens[i].initialValue);
+                    } else {
+                        if (this.tokens[i].node.innerHTML) {
+                            this.tokens[i].node.innerHTML = this.tokens[i].initialValue;                            
+                        } else {
+                            this.tokens[i].node.textContent = this.tokens[i].initialValue;
+                        }                        
+                    }
+                }
+
+                let source = extraValues || this;
+                for(let i = 0; i < this.tokens.length; i++) {
+                    if (source[this.tokens[i].key] === void 0) {
+                        continue;
+                    }
+
                     if (this.tokens[i].attributeName) {
                         // Replace tokens in attributes
-                        content = (this.tokens[i].node === lastNode) 
-                            ? this.tokens[i].node.getAttribute(this.tokens[i].attributeName)
-                            : this.tokens[i].initialValue
-                        ;
+                        content = this.tokens[i].node.getAttribute(this.tokens[i].attributeName);
 
                         this.tokens[i].node.setAttribute(
                             this.tokens[i].attributeName,
-                            content.replace(this.tokens[i].token, this[this.tokens[i].key] || "")
+                            content.replace(this.tokens[i].token, source[this.tokens[i].key])
                         );
                     } else {
                         // Replace token in textContent
-                        content = (this.tokens[i].node === lastNode) 
-                            ? this.tokens[i].node.textContent 
-                            : this.tokens[i].initialValue
-                        ;
+                        content = (this.tokens[i].node.innerHTML || this.tokens[i].node.textContent);
 
-                        this.tokens[i].node.textContent = content.replace(this.tokens[i].token, this[this.tokens[i].key] || "");
+                        if (this.tokens[i].node.innerHTML) {
+                            this.tokens[i].node.innerHTML = content.replace(this.tokens[i].token, source[this.tokens[i].key]);                            
+                        } else {
+                            this.tokens[i].node.textContent = content.replace(this.tokens[i].token, source[this.tokens[i].key]);
+                        }
                     }
-
-                    lastNode = this.tokens[i].node;
                 }
             }
         };

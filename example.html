@@ -1,0 +1,26 @@
+<endemic-definition data-name="endemic-example">
+    <colour-me data-text="Colour me"></colour-me>        
+    <if-true data-condition="1 > 0" data-text="Spoon">
+        ${data-condition}
+        <p>something</p>
+        <for-each data-iterable="['#FF0000', '#00FF00', '#0000FF']">
+            ${data-text}: ${index} 
+            <!--<colour-me data-text="${item}"></colour-me>-->
+        </for-each>
+    </if-true>
+    <if-true data-condition="false">
+        Foo bar baz
+    </if-true>  
+    <script>
+Endemic.import("./colour-me");
+Endemic.import("./if-true");
+Endemic.import("./for-each");
+    </script>
+    <script defer>
+Endemic.register(class extends HTMLElement {
+    constructor() {
+        super();
+    }
+});
+    </script>
+</endemic-definition>

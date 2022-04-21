@@ -1,0 +1,56 @@
+<endemic-definition data-name="for-each">
+    <script defer>
+
+Endemic.register(class extends HTMLElement {
+    /**
+     *
+     */
+    constructor() {
+        super();
+    }
+
+    init() {
+        this._contents = Array.from(this.childNodes).map(e => { return e.cloneNode(true); });
+        this.replaceChildren();
+        this["data-iterable"] = this["data-iterable"];        
+    }
+
+    get "data-iterable"() {
+        return this.getAttribute("data-iterable");
+    }    
+
+    /**
+     *
+     */
+    set "data-iterable"(value) {
+        setTimeout(function() {
+            var array;
+            try {
+                array = Array.from(eval(value));
+            } catch (e) {
+                ; // TODO
+            }
+
+            if (!this.shadowRoot) {
+                this.attachShadow({ mode : "open" });
+            }
+
+            this.shadowRoot.replaceChildren();
+
+            for (let i = 0; i < array.length; i++) {
+                let fragment = document.createDocumentFragment();
+                for (let j = 0; j < this._contents.length; j++) {
+                    fragment.append(this._contents[j].cloneNode(true));
+                }
+
+                this.applyTokensToFragment(fragment, { index: i, item: array[i] });                
+
+                this.shadowRoot.append(fragment);                
+            }
+            this.discoverTokens();
+            this.populate();
+        }.bind(this), 0);
+    }
+});
+    </script>
+</endemic-definition>

@@ -1,0 +1,59 @@
+<endemic-definition data-name="if-true">
+    <script defer>
+Endemic.register(class extends HTMLElement {
+    constructor() {
+        super();
+    }
+
+    init() {
+        this._contents = Array.from(this.childNodes).map(e => { return e.cloneNode(true); });
+        this.replaceChildren();
+        this["data-condition"] = this["data-condition"];
+    }
+
+    get "data-condition"() {
+        return this.getAttribute("data-condition");
+    }
+
+    /**
+     *
+     */
+    set "data-condition"(value) {
+        setTimeout(function() {
+            var result = eval(value);
+            if (result) {
+                this.showContents();
+            } else {
+                this.hideContents();
+            }
+        }.bind(this));
+    }
+
+    /**
+     *
+     */
+    showContents() {
+        if (!this._contents) { 
+            return;
+        }
+
+        if (!this.shadowRoot) {
+            this.attachShadow({ mode : "open" });
+        }
+
+        this._contents.forEach(e => this.shadowRoot.appendChild(e));
+        this.discoverTokens();
+        this.populate();
+    }
+
+    /**
+     *
+     */
+    hideContents() {
+        if (this.shadowRoot) {
+            this.shadowRoot.replaceChildren();
+        }
+    }
+});
+    </script>
+</endemic-definition>
