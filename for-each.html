@@ -47,8 +47,9 @@ Endemic.register(class extends HTMLElement {
 
                 this.shadowRoot.append(fragment);                
             }
-            this.discoverTokens();
-            this.populate();
+
+            this.applyTokens();
+
         }.bind(this), 0);
     }
 });

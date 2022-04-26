@@ -199,7 +199,12 @@ const endemic = {
                 }
 
                 this.populate.call(tokenContainer, extraValues);
-            }            
+            }       
+            
+            applyTokens() {
+                this.discoverTokens();
+                this.populate();
+            }
 
             /**
              * 

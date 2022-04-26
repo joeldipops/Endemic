@@ -42,6 +42,7 @@ Endemic.register(class extends HTMLElement {
         }
 
         this._contents.forEach(e => this.shadowRoot.appendChild(e));
+
         this.discoverTokens();
         this.populate();
     }
